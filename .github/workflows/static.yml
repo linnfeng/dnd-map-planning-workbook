@@ -1,0 +1,275 @@
+name: Deploy static DnD map planning guide to Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Generate independent static guide
+        shell: bash
+        run: |
+          mkdir -p generated_site
+          cat > generated_site/index.html <<'DND_GUIDE_HTML'
+          <!doctype html>
+          <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Designing Reviewable D&amp;D Encounter Maps</title><meta name="description" content="A practical, reviewable workflow for planning Dungeons & Dragons encounter maps."><style>body{font:18px/1.65 system-ui,sans-serif;max-width:900px;margin:auto;padding:32px;color:#19202a}h1,h2,h3{line-height:1.2}a{color:#0757c7}pre,code{background:#f3f5f7}pre{padding:16px;overflow:auto}blockquote{border-left:4px solid #789;padding-left:16px;color:#445}</style></head><body><header><h1>Designing Reviewable D&amp;D Encounter Maps with a Small Planning Contract</h1><p><em>This independent educational guide discusses an AI-assisted web tool and was prepared with autonomous AI assistance.</em></p></header><main><p>A useful encounter map is more than an attractive image. It is a
+          working model of space that helps a game master answer practical
+          questions: where can characters move, what can they see, which routes
+          create meaningful choices, and how does the environment change during
+          play? A dependable map-making process therefore starts with encounter
+          requirements and ends with a table-ready export that another person can
+          understand.</p>
+          <p>This is an independent technical planning guide. DnD Map Maker is the
+          AI-assisted project associated with the article; generated drafts
+          require human review. The examples below are synthetic and demonstrate a
+          portable metadata contract, not an API or native export provided by the
+          product.</p>
+          <p>This guide presents a repeatable workflow for designing dungeon
+          rooms, wilderness sites, buildings, and battle maps. It works whether
+          the final image is drawn manually, assembled from assets, or drafted
+          with an AI-assisted tool such as <a
+          href="https://dndmapmaker.com/">https://dndmapmaker.com/</a>. The
+          important principle is to keep the design decisions reviewable.
+          Generated imagery can accelerate exploration, but the game master
+          remains responsible for scale, access, clarity, tone, and the final
+          playable result.</p>
+          <h2 id="represent-the-brief-as-a-small-data-contract">Represent the
+          brief as a small data contract</h2>
+          <p>A structured brief makes assumptions inspectable before any image is
+          generated. This JSON is intentionally tool-neutral. It is not a claim
+          about a native export format.</p>
+          <div class="sourceCode" id="cb1"><pre
+          class="sourceCode json"><code class="sourceCode json"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+          <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;mapId&quot;</span><span class="fu">:</span> <span class="st">&quot;flooded-observatory&quot;</span><span class="fu">,</span></span>
+          <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;grid&quot;</span><span class="fu">:</span> <span class="fu">{</span> <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;square&quot;</span><span class="fu">,</span> <span class="dt">&quot;cellFeet&quot;</span><span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span> <span class="dt">&quot;columns&quot;</span><span class="fu">:</span> <span class="dv">28</span><span class="fu">,</span> <span class="dt">&quot;rows&quot;</span><span class="fu">:</span> <span class="dv">20</span> <span class="fu">},</span></span>
+          <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;requiredZones&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;south-entry&quot;</span><span class="ot">,</span> <span class="st">&quot;central-dais&quot;</span><span class="ot">,</span> <span class="st">&quot;north-gallery&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+          <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;routes&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+          <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span> <span class="dt">&quot;from&quot;</span><span class="fu">:</span> <span class="st">&quot;south-entry&quot;</span><span class="fu">,</span> <span class="dt">&quot;to&quot;</span><span class="fu">:</span> <span class="st">&quot;central-dais&quot;</span><span class="fu">,</span> <span class="dt">&quot;widthCells&quot;</span><span class="fu">:</span> <span class="dv">2</span> <span class="fu">}</span><span class="ot">,</span></span>
+          <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span> <span class="dt">&quot;from&quot;</span><span class="fu">:</span> <span class="st">&quot;central-dais&quot;</span><span class="fu">,</span> <span class="dt">&quot;to&quot;</span><span class="fu">:</span> <span class="st">&quot;north-gallery&quot;</span><span class="fu">,</span> <span class="dt">&quot;widthCells&quot;</span><span class="fu">:</span> <span class="dv">1</span> <span class="fu">}</span></span>
+          <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span><span class="fu">,</span></span>
+          <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="dt">&quot;hazards&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+          <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span> <span class="dt">&quot;zone&quot;</span><span class="fu">:</span> <span class="st">&quot;central-dais&quot;</span><span class="fu">,</span> <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;rising-water&quot;</span><span class="fu">,</span> <span class="dt">&quot;telegraphed&quot;</span><span class="fu">:</span> <span class="kw">true</span> <span class="fu">}</span></span>
+          <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="ot">]</span></span>
+          <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+          <p>A lightweight validator can reject incomplete briefs before a person
+          spends time reviewing a visual draft:</p>
+          <div class="sourceCode" id="cb2"><pre
+          class="sourceCode javascript"><code class="sourceCode javascript"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">validateMapBrief</span>(brief) {</span>
+          <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> errors <span class="op">=</span> []<span class="op">;</span></span>
+          <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span>brief<span class="op">.</span><span class="at">mapId</span>) errors<span class="op">.</span><span class="fu">push</span>(<span class="st">&quot;mapId is required&quot;</span>)<span class="op">;</span></span>
+          <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span><span class="bu">Number</span><span class="op">.</span><span class="fu">isInteger</span>(brief<span class="op">.</span><span class="at">grid</span><span class="op">?.</span><span class="at">cellFeet</span>) <span class="op">||</span> brief<span class="op">.</span><span class="at">grid</span><span class="op">.</span><span class="at">cellFeet</span> <span class="op">&lt;=</span> <span class="dv">0</span>) {</span>
+          <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    errors<span class="op">.</span><span class="fu">push</span>(<span class="st">&quot;grid.cellFeet must be a positive integer&quot;</span>)<span class="op">;</span></span>
+          <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  }</span>
+          <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="op">!</span><span class="bu">Array</span><span class="op">.</span><span class="fu">isArray</span>(brief<span class="op">.</span><span class="at">requiredZones</span>) <span class="op">||</span> brief<span class="op">.</span><span class="at">requiredZones</span><span class="op">.</span><span class="at">length</span> <span class="op">&lt;</span> <span class="dv">2</span>) {</span>
+          <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    errors<span class="op">.</span><span class="fu">push</span>(<span class="st">&quot;at least two required zones are needed&quot;</span>)<span class="op">;</span></span>
+          <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  }</span>
+          <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="kw">const</span> zones <span class="op">=</span> <span class="kw">new</span> <span class="bu">Set</span>(brief<span class="op">.</span><span class="at">requiredZones</span> <span class="op">||</span> [])<span class="op">;</span></span>
+          <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (<span class="kw">const</span> route <span class="kw">of</span> brief<span class="op">.</span><span class="at">routes</span> <span class="op">||</span> []) {</span>
+          <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span>zones<span class="op">.</span><span class="fu">has</span>(route<span class="op">.</span><span class="at">from</span>) <span class="op">||</span> <span class="op">!</span>zones<span class="op">.</span><span class="fu">has</span>(route<span class="op">.</span><span class="at">to</span>)) {</span>
+          <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>      errors<span class="op">.</span><span class="fu">push</span>(<span class="vs">`unknown route endpoint: </span><span class="sc">${</span>route<span class="op">.</span><span class="at">from</span><span class="sc">}</span><span class="vs"> -&gt; </span><span class="sc">${</span>route<span class="op">.</span><span class="at">to</span><span class="sc">}</span><span class="vs">`</span>)<span class="op">;</span></span>
+          <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    }</span>
+          <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="op">!</span><span class="bu">Number</span><span class="op">.</span><span class="fu">isInteger</span>(route<span class="op">.</span><span class="at">widthCells</span>) <span class="op">||</span> route<span class="op">.</span><span class="at">widthCells</span> <span class="op">&lt;</span> <span class="dv">1</span>) {</span>
+          <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>      errors<span class="op">.</span><span class="fu">push</span>(<span class="st">&quot;route widthCells must be at least 1&quot;</span>)<span class="op">;</span></span>
+          <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    }</span>
+          <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>  }</span>
+          <span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> errors<span class="op">;</span></span>
+          <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>}</span>
+          <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+          <span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> errors <span class="op">=</span> <span class="fu">validateMapBrief</span>(exampleBrief)<span class="op">;</span></span>
+          <span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (errors<span class="op">.</span><span class="at">length</span>) <span class="cf">throw</span> <span class="kw">new</span> <span class="bu">Error</span>(errors<span class="op">.</span><span class="fu">join</span>(<span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>))<span class="op">;</span></span></code></pre></div>
+          <p>The contract does not prove that a map is playable. It only turns
+          several important requirements into explicit, testable values. Visual
+          inspection and tabletop judgment remain necessary.</p>
+          <h2 id="1-write-a-short-encounter-brief">1. Write a short encounter
+          brief</h2>
+          <p>Before drawing walls, summarize the scene in five or six lines.
+          Record the purpose of the location, the expected party size and level,
+          the likely opposition, the desired mood, and the main decision the map
+          should create. A ruined observatory might ask the party to choose
+          between a visible central staircase and two slower side routes. A
+          smugglers' cave might revolve around tides, narrow ledges, and boats
+          that can be moved.</p>
+          <p>The brief prevents decorative details from taking control of the
+          design. It also gives you a stable reference when revising a generated
+          image. If a beautiful draft does not support the intended choice, change
+          the draft rather than rewriting the encounter around an accidental
+          feature.</p>
+          <h2 id="2-establish-scale-and-the-playable-boundary">2. Establish scale
+          and the playable boundary</h2>
+          <p>Choose the grid scale early. Five feet per square is common for
+          character-scale combat, but larger outdoor scenes may need ten-foot
+          squares or a gridless measurement system. Write the choice in the map
+          notes. Then mark the playable boundary and distinguish it from
+          background scenery.</p>
+          <p>Check whether doors, corridors, stairs, bridges, and furniture fit
+          the creatures expected in the scene. A corridor that looks wide in an
+          image may represent only one square after export. Large creatures need
+          turning space, while ranged encounters need enough distance for movement
+          and cover to matter. If the location will be used online, test the
+          exported image in the target virtual tabletop before finalizing
+          details.</p>
+          <h2 id="3-design-routes-before-decoration">3. Design routes before
+          decoration</h2>
+          <p>Sketch a simple route diagram using boxes and lines. Each box is a
+          meaningful area; each line is a connection. Most tactical locations
+          benefit from at least two routes between important areas. Alternate
+          routes may involve risk, time, noise, locked doors, vertical movement,
+          or resource costs.</p>
+          <p>Avoid making every room a dead end unless the story calls for it.
+          Loops let players flank, retreat, investigate, and form plans. Choke
+          points are useful when they are intentional, but a map composed only of
+          narrow choke points can make every encounter feel similar. Combine open
+          areas, protected positions, and transitional spaces.</p>
+          <p>At this stage, label entrances and exits clearly. Include routes
+          opponents might use even if the characters do not initially know about
+          them. Secret passages should still make physical sense within the
+          building or terrain.</p>
+          <h2 id="4-add-elevation-and-sight-lines">4. Add elevation and sight
+          lines</h2>
+          <p>Elevation often creates more tactical variety than additional floor
+          clutter. Platforms, balconies, pits, ramps, staircases, and ledges can
+          change movement and visibility without making the map hard to read. Note
+          the height of each level and how characters move between levels.</p>
+          <p>Trace several likely lines of sight from entrances and important
+          positions. Decide which obstacles provide full cover, partial cover,
+          concealment, or no meaningful protection. Tall objects should cast
+          readable shadows or receive clear labels so that players do not mistake
+          them for flat floor textures.</p>
+          <p>For complicated multi-level locations, produce separate floor images
+          or a numbered diagram. Trying to show every level in one top-down image
+          can create ambiguity. A concise legend is better than relying on visual
+          style alone.</p>
+          <h2 id="5-place-interactive-terrain">5. Place interactive terrain</h2>
+          <p>Interactive features turn scenery into decisions. Examples include
+          doors that can be barred, chandeliers that can fall, unstable bridges,
+          flood controls, movable carts, spreading fire, ritual circles, fragile
+          windows, and machinery with visible controls. Each feature should have a
+          plausible effect and a clear location.</p>
+          <p>Record the rule or ruling separately from the image. The map may show
+          a cracked pillar, but the encounter notes should state what happens if
+          it collapses. This keeps the art reusable and prevents hidden mechanics
+          from being lost when the image is shared with another game master.</p>
+          <p>Use restraint. Three memorable interactions are often more useful
+          than fifteen tiny props. Dense decoration can hide movement boundaries
+          and make tokens difficult to see.</p>
+          <h2 id="6-create-or-generate-the-visual-draft">6. Create or generate the
+          visual draft</h2>
+          <p>Once the functional plan is stable, create the visual draft. If using
+          an AI-assisted map generator, describe the viewpoint, environment, room
+          arrangement, lighting, material palette, and required open spaces.
+          Request a top-down composition and avoid instructions that depend on
+          exact text appearing inside the image, because generated labels may be
+          unreliable.</p>
+          <p>Treat the first result as a draft, not as evidence that every
+          requirement has been met. Compare it against the route diagram and
+          encounter brief. Check entrances, room connections, scale cues, and
+          unwanted obstructions. Revise selected areas when possible instead of
+          repeatedly regenerating the entire map, because local revision preserves
+          parts that already work.</p>
+          <p>Do not assume a generated feature has a specific game effect. Decide
+          the mechanics yourself and write them in the encounter notes. Also
+          review the result for accidental symbols, malformed objects,
+          inconsistent stairs, impossible shadows, or doors that open into solid
+          walls.</p>
+          <h2 id="7-run-a-movement-audit">7. Run a movement audit</h2>
+          <p>Simulate at least three turns of movement from each entrance. Move
+          representative tokens through doors, around corners, and across
+          elevation changes. Confirm that the intended routes are actually usable
+          at the chosen scale.</p>
+          <p>Ask practical questions. Can a token stand on both sides of a door?
+          Is there space to pass an ally? Can a large creature leave its starting
+          area? Does a bridge connect cleanly to walkable ground? Are diagonal
+          gaps truly passable? If difficult terrain exists, can players identify
+          its boundary?</p>
+          <p>A movement audit catches problems that are easy to miss in a static
+          image. It also reveals whether the map is too large for the expected
+          encounter duration. Long empty approaches can consume table time without
+          adding decisions.</p>
+          <h2 id="8-review-information-clarity">8. Review information clarity</h2>
+          <p>Separate what players can see from what only the game master knows.
+          The player map should not reveal secret doors, trap triggers, hidden
+          creatures, or private labels. Keep a second annotated version or a
+          lightweight key containing numbered locations.</p>
+          <p>Check contrast at the actual display size. Tokens should remain
+          visible over floors, shadows, vegetation, and furniture. Doorways and
+          walls need recognizable boundaries. If the map uses a grid, confirm that
+          grid lines are visible without dominating the art. A gridless version
+          can also be useful for systems with free measurement.</p>
+          <p>Include a small legend only when symbols are not self-explanatory.
+          North arrows, scale bars, elevation labels, and numbered markers are
+          more useful than decorative titles covering playable space.</p>
+          <h2 id="9-perform-a-table-test">9. Perform a table test</h2>
+          <p>The fastest quality check is a short mock encounter. Place the
+          expected number of heroes and opponents, then play through the opening
+          round. Test one melee route, one ranged position, and one environmental
+          interaction. You do not need to resolve the whole battle.</p>
+          <p>Observe whether the map creates the choice described in the original
+          brief. If every sensible move leads to the same square, add another
+          route or objective. If one position dominates without a counter, adjust
+          cover, access, or elevation. If players would spend several turns simply
+          walking, compress the layout or add meaningful events along the way.</p>
+          <p>For exploration maps, test navigation instead of combat. Can a player
+          describe where they are? Do landmarks distinguish similar corridors? Are
+          clues placed where they can reasonably be noticed?</p>
+          <h2 id="10-export-with-a-handoff-note">10. Export with a handoff
+          note</h2>
+          <p>Export a high-resolution master and a practical table version. Use a
+          common format such as PNG or WebP, and keep the editable source if the
+          tool provides one. Name files consistently, for example
+          <code>observatory-player-v1.png</code>,
+          <code>observatory-gm-v1.png</code>, and
+          <code>observatory-notes-v1.md</code>.</p>
+          <p>The handoff note should state the grid scale, image dimensions,
+          intended virtual tabletop size, numbered locations, elevation rules, and
+          any environmental mechanics. Mention whether the map is final or still
+          under review. If an AI-assisted draft was used, say so plainly when that
+          information matters to collaborators or the publication context.</p>
+          <p>Finally, open the exported file rather than trusting the export
+          dialog. Confirm that it is not cropped, blank, unexpectedly compressed,
+          or missing the latest revision. Import it into the intended tabletop
+          software and verify grid alignment there.</p>
+          <h2 id="compact-checklist">Compact checklist</h2>
+          <p>Before using the map, confirm the following:</p>
+          <ul>
+          <li>The encounter purpose and main decision are written down.</li>
+          <li>Scale, entrances, exits, and playable boundaries are clear.</li>
+          <li>Important areas have intentional routes and usable connections.</li>
+          <li>Elevation and sight-blocking objects are understandable.</li>
+          <li>Interactive terrain has separate, explicit rules.</li>
+          <li>Generated or drawn visuals match the functional plan.</li>
+          <li>Representative tokens can move through the location.</li>
+          <li>Player and game-master information are separated.</li>
+          <li>Contrast and token visibility work at actual play size.</li>
+          <li>Exported files open correctly and align in the target tabletop.</li>
+          </ul>
+          <p>A map that passes these checks does not need to be visually
+          elaborate. Its value comes from supporting clear choices, understandable
+          movement, and a smooth handoff from preparation to play.</p>
+          </main><footer><p>Interactive planning reference: <a href="https://dndmapmaker.com/">https://dndmapmaker.com/</a></p></footer></body></html>
+          DND_GUIDE_HTML
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: generated_site
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
